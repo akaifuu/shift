@@ -8,8 +8,8 @@
   <style>
     :root {
       --border-color: #333333;
-      --bg-toshi: #C2F0C2;  /* High contrast sage green */
-      --bg-part: #C2E0FF;   /* High contrast soft blue */
+      --bg-toshi: #C2F0C2;  /* Soft Green */
+      --bg-part: #C2E0FF;   /* Soft Blue */
       --off-color: #D32F2F;
     }
 
@@ -21,27 +21,37 @@
       font-family: "Hiragino Kaku Gothic ProN", "Meiryo", -apple-system, sans-serif;
       background-color: #F4F6F8;
       margin: 0;
-      padding: 20px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
 
-    /* Minimal Toolbar */
+    /* Responsive Toolbar */
     .toolbar {
       background: #FFFFFF;
       border: 1px solid #CBD5E0;
-      padding: 10px 18px;
+      padding: 10px 14px;
       border-radius: 6px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       display: flex;
-      gap: 12px;
+      gap: 8px;
       align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 780px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
     .toolbar select, .toolbar input, .toolbar button {
-      padding: 6px 10px;
+      padding: 6px 8px;
       font-size: 13px;
       border: 1px solid #A0AEC0;
       border-radius: 4px;
@@ -54,18 +64,29 @@
       font-weight: bold;
       border: none;
       cursor: pointer;
+      padding: 6px 12px;
     }
 
     .toolbar button:hover {
       background-color: #2B6CB0;
     }
 
-    /* Document Sheet */
+    /* Mobile Scroll Outer Container */
+    .paper-wrapper {
+      width: 100%;
+      max-width: 780px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      border-radius: 4px;
+    }
+
+    /* Document Sheet (Maintained at 780px fixed width internally for crisp export layout) */
     #shift-paper {
       background: #FFFFFF;
-      padding: 28px 24px;
+      padding: 24px 20px;
       width: 780px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      margin: 0 auto;
     }
 
     .doc-header {
@@ -161,32 +182,61 @@
     .print-text.off {
       color: var(--off-color);
     }
+
+    /* Mobile UI Tweaks */
+    @media (max-width: 600px) {
+      body {
+        padding: 8px;
+      }
+      .toolbar {
+        gap: 6px;
+        padding: 8px;
+      }
+      .toolbar-group label {
+        font-size: 12px;
+      }
+      .toolbar select, .toolbar input {
+        font-size: 12px;
+        padding: 4px 6px;
+      }
+      #name-input {
+        width: 90px;
+      }
+    }
   </style>
 </head>
 <body>
 
   <div class="toolbar">
-    <label for="year-select">年:</label>
-    <select id="year-select">
-      <option value="2026" selected>2026</option>
-      <option value="2027">2027</option>
-    </select>
+    <div class="toolbar-group">
+      <label for="year-select">年:</label>
+      <select id="year-select">
+        <option value="2026" selected>2026</option>
+        <option value="2027">2027</option>
+      </select>
+    </div>
 
-    <label for="month-select">月:</label>
-    <select id="month-select"></select>
+    <div class="toolbar-group">
+      <label for="month-select">月:</label>
+      <select id="month-select"></select>
+    </div>
 
-    <label for="name-input">名前:</label>
-    <input type="text" id="name-input" value="アンドレアス">
+    <div class="toolbar-group">
+      <label for="name-input">名前:</label>
+      <input type="text" id="name-input" value="アンドレアス">
+    </div>
 
     <button onclick="downloadImage()">画像をダウンロード</button>
   </div>
 
-  <div id="shift-paper">
-    <div class="doc-header">
-      <div class="doc-title" id="title-text">2026年 10月 シフト希望</div>
-      <div class="doc-name" id="name-text">アンドレアス</div>
+  <div class="paper-wrapper">
+    <div id="shift-paper">
+      <div class="doc-header">
+        <div class="doc-title" id="title-text">2026年 10月 シフト希望</div>
+        <div class="doc-name" id="name-text">アンドレアス</div>
+      </div>
+      <div id="tables-container"></div>
     </div>
-    <div id="tables-container"></div>
   </div>
 
   <script>
@@ -313,7 +363,7 @@
       });
 
       html2canvas(document.getElementById('shift-paper'), {
-        scale: 3, // Increased pixel density for ultra-sharp rendering
+        scale: 3,
         backgroundColor: '#FFFFFF',
         useCORS: true
       }).then(canvas => {
