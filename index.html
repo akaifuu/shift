@@ -81,7 +81,7 @@
       border-radius: 4px;
     }
 
-    /* Document Sheet (Maintained at 780px fixed width internally for crisp export layout) */
+    /* Document Sheet (780px fixed width internally for uniform export) */
     #shift-paper {
       background: #FFFFFF;
       padding: 24px 20px;
@@ -352,6 +352,7 @@
     function downloadImage() {
       const selects = document.querySelectorAll('.shift-select');
       
+      // Swap dropdowns for static text before capture
       selects.forEach(select => {
         const span = select.nextElementSibling;
         span.textContent = select.value;
@@ -362,16 +363,36 @@
         span.style.display = 'inline';
       });
 
+      // Detect iOS devices (iPhone, iPad, iPod)
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
       html2canvas(document.getElementById('shift-paper'), {
         scale: 3,
         backgroundColor: '#FFFFFF',
         useCORS: true
       }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `${monthSelect.value}月シフト希望_${nameInput.value}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+        const fileName = `${monthSelect.value}月シフト希望_${nameInput.value}.png`;
 
+        if (isIOS) {
+          // iOS Safari workflow: Convert to Blob and open image directly in a new tab for native long-press save
+          canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const newWindow = window.open(url, '_blank');
+            if (!newWindow) {
+              // Fallback if popup blocker intervenes
+              window.location.href = url;
+            }
+          }, 'image/png');
+        } else {
+          // Standard Desktop / Android direct download workflow
+          const link = document.createElement('a');
+          link.download = fileName;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        }
+
+        // Restore dropdowns after capture completes
         selects.forEach(select => {
           const span = select.nextElementSibling;
           select.style.display = 'block';
