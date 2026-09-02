@@ -125,7 +125,7 @@
       border-bottom: 1px solid var(--border-color);
       text-align: center;
       vertical-align: middle;
-      height: 32px;
+      height: 34px;
       font-size: 12px;
       padding: 0;
       transition: background-color 0.15s ease;
@@ -142,6 +142,7 @@
     .col-day {
       width: 12.5%;
       font-weight: bold;
+      background-color: #FFFFFF;
     }
 
     /* Dynamic Highlight Classes */
@@ -248,7 +249,7 @@
     const tablesContainer = document.getElementById('tables-container');
 
     const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
-    const shiftOptions = ['通し', '▼17時入り', '△15時あがり', '❌', '早番', '遅番'];
+    const shiftOptions = ['通し', '▼17時入り', '△15時あがり', '❌'];
 
     for (let m = 1; m <= 12; m++) {
       const opt = document.createElement('option');
@@ -302,23 +303,15 @@
         const table = document.createElement('table');
         table.className = 'week-table';
 
-        // Row 1: Week Label + Date Numbers ("1日", "2日", etc.)
+        // Row 1: Combined Date + Weekday Headers ("1日 (日)", "2日 (月)", etc.)
         let html = `<thead><tr><th class="col-label">${weekIndex}週目</th>`;
         weekDays.forEach((d, idx) => {
-          html += `<th class="col-day" data-col-index="${idx}">${d.dayNum}日</th>`;
+          html += `<th class="col-day" data-col-index="${idx}">${d.dayNum}日 | ${d.dowLabel}</th>`;
         });
         for (let p = weekDays.length; p < 7; p++) html += `<th class="col-day"></th>`;
         html += `</tr></thead><tbody>`;
 
-        // Row 2: Weekday Headers ("日", "月", "火", etc.)
-        html += `<tr><td class="col-label">曜日</td>`;
-        weekDays.forEach((d, idx) => {
-          html += `<td class="col-day" data-col-index="${idx}">${d.dowLabel}</td>`;
-        });
-        for (let p = weekDays.length; p < 7; p++) html += `<td></td>`;
-        html += `</tr>`;
-
-        // Row 3: Shift Selection
+        // Row 2: Shift Selection
         html += `<tr><td class="col-label">${name}</td>`;
         weekDays.forEach((d, idx) => {
           let defaultVal = '通し';
