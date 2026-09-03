@@ -300,32 +300,50 @@
       const totalWeeks = parseInt(weeksCountSelect.value);
       const name = nameInput.value || '';
 
-      // Set header text based on main month
-      const mainMonth = currentDate.getMonth() + 1;
-      const mainYear = currentDate.getFullYear();
-      titleText.textContent = `${mainYear}年 ${mainMonth}月 シフト希望`;
-      nameText.textContent = name;
       tablesContainer.innerHTML = '';
+
+      // Month counter to find the dominant month
+      const monthCounts = {};
+      const allWeeksData = [];
 
       for (let w = 1; w <= totalWeeks; w++) {
         const weekDays = [];
         
         for (let i = 0; i < 7; i++) {
+          const year = currentDate.getFullYear();
+          const month = currentDate.getMonth() + 1;
+          const dayNum = currentDate.getDate();
+
+          const monthKey = `${year}-${month}`;
+          monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+
           weekDays.push({
-            month: currentDate.getMonth() + 1,
-            dayNum: currentDate.getDate(),
+            month: month,
+            dayNum: dayNum,
             dowLabel: dayLabels[i]
           });
           currentDate.setDate(currentDate.getDate() + 1);
         }
+        allWeeksData.push(weekDays);
+      }
 
+      // Determine month with highest frequency
+      let dominantMonthKey = Object.keys(monthCounts).reduce((a, b) => monthCounts[a] > monthCounts[b] ? a : b);
+      const [domYear, domMonth] = dominantMonthKey.split('-');
+
+      titleText.textContent = `${domYear}年 ${domMonth}月 シフト希望`;
+      nameText.textContent = name;
+
+      // Render Tables
+      allWeeksData.forEach((weekDays, wIdx) => {
+        const w = wIdx + 1;
         const table = document.createElement('table');
         table.className = 'week-table';
 
         // Row 1: Week Label + Date Numbers ("10/1日", "2日", etc.)
         let html = `<thead><tr><th class="col-label">${w}週目</th>`;
         weekDays.forEach((d, idx) => {
-          html += `<th class="col-day" data-col-index="${idx}">${d.month}月${d.dayNum}日</th>`;
+          html += `<th class="col-day" data-col-index="${idx}">${d.month}/${d.dayNum}日</th>`;
         });
         html += `</tr></thead><tbody>`;
 
@@ -361,7 +379,7 @@
           updateColumnHighlight(select);
           select.addEventListener('change', (e) => updateColumnHighlight(e.target));
         });
-      }
+      });
     }
 
     function downloadImage() {
@@ -385,7 +403,7 @@
         backgroundColor: '#FFFFFF',
         useCORS: true
       }).then(canvas => {
-        const fileName = `シフト希望_${nameInput.value}.png`;
+        const fileName = `${titleText.textContent}_${nameInput.value}.png`;
 
         if (isIOS) {
           canvas.toBlob((blob) => {
