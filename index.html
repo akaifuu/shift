@@ -343,7 +343,7 @@
         // Row 1: Week Label + Date Numbers ("10/1日", "2日", etc.)
         let html = `<thead><tr><th class="col-label">${w}週目</th>`;
         weekDays.forEach((d, idx) => {
-          html += `<th class="col-day" data-col-index="${idx}">${d.month}/${d.dayNum}日</th>`;
+          html += `<th class="col-day" data-col-index="${idx}">${d.month}月${d.dayNum}日</th>`;
         });
         html += `</tr></thead><tbody>`;
 
