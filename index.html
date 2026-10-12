@@ -283,7 +283,7 @@
     const tablesContainer = document.getElementById('tables-container');
 
     const dayLabels = ['月', '火', '水', '木', '金', '土', '日'];
-    const shiftOptions = ['通し', '❌', '有給休暇', '▼9時入り', '▼10時入り', '▼11時入り', '▼12時入り', '▼14時入り', '▼17時入り', '△15時あがり', '△20時あがり'];
+    const shiftOptions = ['通し', '❌', '有給休暇', '▼9時入り', '▼10時入り', '▼11時入り', '▼12時入り', '▼14時入り', '▼17時入り', '△15時あがり','△18時あがり', '△20時あがり', '△21時あがり'];
 
     function initName() {
       const savedName = localStorage.getItem('shift_generator_name');
@@ -347,6 +347,12 @@
           cell.classList.add('highlight-15out');
         }
         else if (val === '△20時あがり') {
+          cell.classList.add('highlight-15out');
+        }
+        else if (val === '△18時あがり') {
+          cell.classList.add('highlight-15out');
+        }
+         else if (val === '△21時あがり') {
           cell.classList.add('highlight-15out');
         }
       });
