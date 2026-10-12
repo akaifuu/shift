@@ -9,8 +9,7 @@
     :root {
       --border-color: #333333;
       --bg-toshi: #C2F0C2;    /* Soft Green */
-      --bg-17in: #C2E0FF;     /* Soft Blue */
-      --bg-18in: #99C2FF;     /* Darker Blue */
+      --bg-part: #C2E0FF;     /* Soft Blue */
       --bg-15out: #FFE0C2;    /* Soft Orange */
       --off-color: #D32F2F;
     }
@@ -71,6 +70,16 @@
 
     .toolbar button:hover {
       background-color: #2B6CB0;
+    }
+
+    .save-btn {
+      background-color: #2F855A !important;
+      padding: 6px 10px !important;
+      font-size: 12px !important;
+    }
+
+    .save-btn:hover {
+      background-color: #276749 !important;
     }
 
     /* Mobile Scroll Outer Container */
@@ -134,6 +143,12 @@
       color: #000000;
     }
 
+    /* Make entire column clearly interactive */
+    .week-table th[data-col-index],
+    .week-table td[data-col-index] {
+      cursor: pointer;
+    }
+
     /* Header Labels */
     .col-label {
       width: 12.5%;
@@ -151,12 +166,8 @@
       background-color: var(--bg-toshi) !important;
     }
 
-    .highlight-17in {
-      background-color: var(--bg-17in) !important;
-    }
-
-    .highlight-18in {
-      background-color: var(--bg-18in) !important;
+    .highlight-part {
+      background-color: var(--bg-part) !important;
     }
 
     .highlight-15out {
@@ -210,7 +221,7 @@
         padding: 4px 6px;
       }
       #name-input {
-        width: 90px;
+        width: 75px;
       }
     }
   </style>
@@ -220,7 +231,7 @@
   <div class="toolbar">
     <div class="toolbar-group">
       <label for="start-date">開始月曜日:</label>
-      <input type="date" id="start-date" value="2026-09-28">
+      <input type="date" id="start-date">
     </div>
 
     <div class="toolbar-group">
@@ -231,12 +242,14 @@
         <option value="3">3週</option>
         <option value="4" selected>4週</option>
         <option value="5">5週</option>
+        <option value="6">6週</option>
       </select>
     </div>
 
     <div class="toolbar-group">
       <label for="name-input">名前:</label>
-      <input type="text" id="name-input" value="アンドレアス">
+      <input type="text" id="name-input">
+      <button class="save-btn" onclick="saveNameToStorage()" title="名前を保存">💾 名前を保存</button>
     </div>
 
     <button onclick="downloadImage()">画像をダウンロード</button>
@@ -246,7 +259,7 @@
     <div id="shift-paper">
       <div class="doc-header">
         <div class="doc-title" id="title-text">シフト希望</div>
-        <div class="doc-name" id="name-text">アンドレアス</div>
+        <div class="doc-name" id="name-text"></div>
       </div>
       <div id="tables-container"></div>
     </div>
@@ -261,7 +274,48 @@
     const tablesContainer = document.getElementById('tables-container');
 
     const dayLabels = ['月', '火', '水', '木', '金', '土', '日'];
-    const shiftOptions = ['通し', '▼17時入り', '▼18時入り', '△15時あがり', '❌'];
+    const shiftOptions = ['通し', '▼9時入り', '▼10時入り', '▼11時入り', '▼12時入り', '▼14時入り', '▼17時入り', '△15時あがり', '❌'];
+
+    function initName() {
+      const savedName = localStorage.getItem('shift_generator_name');
+      if (savedName !== null) {
+        nameInput.value = savedName;
+      } else {
+        nameInput.value = 'アンドレアス';
+      }
+    }
+
+    function saveNameToStorage() {
+      localStorage.setItem('shift_generator_name', nameInput.value);
+      const btn = document.querySelector('.save-btn');
+      const originalText = btn.textContent;
+      btn.textContent = '💾 保存完了!';
+      setTimeout(() => { btn.textContent = originalText; }, 1200);
+    }
+
+    function initDefaultDate() {
+      const now = new Date();
+      let targetYear = now.getFullYear();
+      let targetMonth = now.getMonth() + 1;
+      if (targetMonth > 11) {
+        targetMonth = 0;
+        targetYear++;
+      } else {
+        targetMonth = now.getMonth() + 1;
+      }
+
+      let firstDayNextMonth = new Date(targetYear, targetMonth, 1);
+      
+      let dayOfWeek = firstDayNextMonth.getDay();
+      let diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+      firstDayNextMonth.setDate(firstDayNextMonth.getDate() + diffToMonday);
+
+      const yyyy = firstDayNextMonth.getFullYear();
+      const mm = String(firstDayNextMonth.getMonth() + 1).padStart(2, '0');
+      const dd = String(firstDayNextMonth.getDate()).padStart(2, '0');
+
+      startDateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
 
     function updateColumnHighlight(selectEl) {
       const val = selectEl.value;
@@ -271,13 +325,11 @@
       const targetCells = table.querySelectorAll(`[data-col-index="${colIndex}"]`);
 
       targetCells.forEach(cell => {
-        cell.classList.remove('highlight-toshi', 'highlight-17in', 'highlight-18in', 'highlight-15out');
+        cell.classList.remove('highlight-toshi', 'highlight-part', 'highlight-15out');
         if (val === '通し') {
           cell.classList.add('highlight-toshi');
-        } else if (val === '▼17時入り') {
-          cell.classList.add('highlight-17in');
-        } else if (val === '▼18時入り') {
-          cell.classList.add('highlight-18in');
+        } else if (val.includes('入り')) {
+          cell.classList.add('highlight-part');
         } else if (val === '△15時あがり') {
           cell.classList.add('highlight-15out');
         }
@@ -290,8 +342,7 @@
 
       let currentDate = new Date(startDateVal + 'T00:00:00');
       
-      // Auto-adjust to Monday if a non-Monday date is picked
-      const dayOfWeek = currentDate.getDay(); // 0 is Sunday, 1 is Monday...
+      const dayOfWeek = currentDate.getDay(); 
       const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
       if (diffToMonday !== 0) {
         currentDate.setDate(currentDate.getDate() + diffToMonday);
@@ -302,7 +353,6 @@
 
       tablesContainer.innerHTML = '';
 
-      // Month counter to find the dominant month
       const monthCounts = {};
       const allWeeksData = [];
 
@@ -327,39 +377,32 @@
         allWeeksData.push(weekDays);
       }
 
-      // Determine month with highest frequency
       let dominantMonthKey = Object.keys(monthCounts).reduce((a, b) => monthCounts[a] > monthCounts[b] ? a : b);
       const [domYear, domMonth] = dominantMonthKey.split('-');
 
       titleText.textContent = `${domYear}年 ${domMonth}月 シフト希望`;
       nameText.textContent = name;
 
-      // Render Tables
       allWeeksData.forEach((weekDays, wIdx) => {
         const w = wIdx + 1;
         const table = document.createElement('table');
         table.className = 'week-table';
 
-        // Row 1: Week Label + Date Numbers ("10/1日", "2日", etc.)
         let html = `<thead><tr><th class="col-label">${w}週目</th>`;
         weekDays.forEach((d, idx) => {
           html += `<th class="col-day" data-col-index="${idx}">${d.month}月${d.dayNum}日</th>`;
         });
         html += `</tr></thead><tbody>`;
 
-        // Row 2: Weekday Headers ("月", "火", "水", etc.)
         html += `<tr><td class="col-label">曜日</td>`;
         weekDays.forEach((d, idx) => {
           html += `<td class="col-day" data-col-index="${idx}">${d.dowLabel}</td>`;
         });
         html += `</tr>`;
 
-        // Row 3: Shift Selection
         html += `<tr><td class="col-label">${name}</td>`;
         weekDays.forEach((d, idx) => {
           let defaultVal = '通し';
-          if (d.dowLabel === '金') defaultVal = '▼17時入り';
-          if (['月', '火', '水', '木'].includes(d.dowLabel)) defaultVal = '❌';
 
           html += `
             <td data-col-index="${idx}">
@@ -374,6 +417,22 @@
 
         table.innerHTML = html;
         tablesContainer.appendChild(table);
+
+        table.querySelectorAll('[data-col-index]').forEach(element => {
+          element.addEventListener('click', (e) => {
+            const colIdx = element.dataset.colIndex;
+            const select = table.querySelector(`select.shift-select[data-col-index="${colIdx}"]`);
+            if (select) {
+              select.focus();
+              if (typeof select.showPicker === 'function') {
+                select.showPicker();
+              } else {
+                const clickEvent = new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window });
+                select.dispatchEvent(clickEvent);
+              }
+            }
+          });
+        });
 
         table.querySelectorAll('.shift-select').forEach(select => {
           updateColumnHighlight(select);
@@ -430,8 +489,13 @@
 
     startDateInput.addEventListener('change', renderRoster);
     weeksCountSelect.addEventListener('change', renderRoster);
-    nameInput.addEventListener('input', renderRoster);
+    nameInput.addEventListener('input', () => {
+      saveNameToStorage();
+      renderRoster();
+    });
 
+    initName();
+    initDefaultDate();
     renderRoster();
   </script>
 </body>
