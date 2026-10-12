@@ -10,6 +10,7 @@
       --border-color: #333333;
       --bg-toshi: #C2F0C2;    /* Soft Green */
       --bg-part: #C2E0FF;     /* Soft Blue */
+      --bg-yukyu: #FFE680;    /* Popping Golden Yellow */
       --bg-15out: #FFE0C2;    /* Soft Orange */
       --off-color: #D32F2F;
     }
@@ -166,6 +167,14 @@
       background-color: var(--bg-toshi) !important;
     }
 
+    .highlight-off {
+      background-color: #FFFFFF !important;
+    }
+
+    .highlight-yukyu {
+      background-color: var(--bg-yukyu) !important;
+    }
+
     .highlight-part {
       background-color: var(--bg-part) !important;
     }
@@ -274,7 +283,7 @@
     const tablesContainer = document.getElementById('tables-container');
 
     const dayLabels = ['月', '火', '水', '木', '金', '土', '日'];
-    const shiftOptions = ['通し', '▼9時入り', '▼10時入り', '▼11時入り', '▼12時入り', '▼14時入り', '▼17時入り', '△15時あがり', '❌'];
+    const shiftOptions = ['通し', '❌', '有給休暇', '▼9時入り', '▼10時入り', '▼11時入り', '▼12時入り', '▼14時入り', '▼17時入り', '△15時あがり'];
 
     function initName() {
       const savedName = localStorage.getItem('shift_generator_name');
@@ -325,9 +334,13 @@
       const targetCells = table.querySelectorAll(`[data-col-index="${colIndex}"]`);
 
       targetCells.forEach(cell => {
-        cell.classList.remove('highlight-toshi', 'highlight-part', 'highlight-15out');
+        cell.classList.remove('highlight-toshi', 'highlight-off', 'highlight-yukyu', 'highlight-part', 'highlight-15out');
         if (val === '通し') {
           cell.classList.add('highlight-toshi');
+        } else if (val === '❌') {
+          cell.classList.add('highlight-off');
+        } else if (val === '有給休暇') {
+          cell.classList.add('highlight-yukyu');
         } else if (val.includes('入り')) {
           cell.classList.add('highlight-part');
         } else if (val === '△15時あがり') {
@@ -339,6 +352,17 @@
     function renderRoster() {
       let startDateVal = startDateInput.value;
       if (!startDateVal) return;
+
+      // Collect current states before rebuilding the tables (keyed by date string like "2026-10-01")
+      const existingStates = {};
+      document.querySelectorAll('.week-table').forEach(table => {
+        table.querySelectorAll('select.shift-select').forEach(sel => {
+          const dateStr = sel.dataset.dateStr;
+          if (dateStr) {
+            existingStates[dateStr] = sel.value;
+          }
+        });
+      });
 
       let currentDate = new Date(startDateVal + 'T00:00:00');
       
@@ -363,11 +387,17 @@
           const year = currentDate.getFullYear();
           const month = currentDate.getMonth() + 1;
           const dayNum = currentDate.getDate();
+          
+          const yyyy = year;
+          const mm = String(month).padStart(2, '0');
+          const dd = String(dayNum).padStart(2, '0');
+          const dateStr = `${yyyy}-${mm}-${dd}`;
 
           const monthKey = `${year}-${month}`;
           monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
 
           weekDays.push({
+            dateStr: dateStr,
             month: month,
             dayNum: dayNum,
             dowLabel: dayLabels[i]
@@ -402,11 +432,12 @@
 
         html += `<tr><td class="col-label">${name}</td>`;
         weekDays.forEach((d, idx) => {
-          let defaultVal = '通し';
+          // Restore saved state if available, otherwise default to '通し'
+          let defaultVal = existingStates[d.dateStr] !== undefined ? existingStates[d.dateStr] : '通し';
 
           html += `
             <td data-col-index="${idx}">
-              <select class="shift-select" data-col-index="${idx}">
+              <select class="shift-select" data-col-index="${idx}" data-date-str="${d.dateStr}">
                 ${shiftOptions.map(opt => `<option value="${opt}" ${opt === defaultVal ? 'selected' : ''}>${opt}</option>`).join('')}
               </select>
               <span class="print-text"></span>
