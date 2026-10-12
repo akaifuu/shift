@@ -155,6 +155,17 @@
       width: 12.5%;
       font-weight: bold;
       background-color: #F0F0F0;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .col-label select {
+      font-size: 11px;
+      padding: 1px;
+      background: #FFFFFF;
+      border: 1px solid #A0AEC0;
+      border-radius: 3px;
+      cursor: pointer;
     }
 
     .col-day {
@@ -280,10 +291,13 @@
     const nameInput = document.getElementById('name-input');
     const titleText = document.getElementById('title-text');
     const nameText = document.getElementById('name-text');
-    const tablesContainer = document.getElementById('tables-container');
+    const tablesContainer = document.getElementById('tables-center') || document.getElementById('tables-container');
 
     const dayLabels = ['月', '火', '水', '木', '金', '土', '日'];
-    const shiftOptions = ['通し', '❌', '有給休暇', '▼9時入り', '▼10時入り', '▼11時入り', '▼12時入り', '▼14時入り', '▼17時入り', '△15時あがり','△18時あがり', '△20時あがり', '△21時あがり'];
+    const shiftOptions = ['通し', '❌', '有給休暇', '▼9時入り', '▼10時入り', '▼11時入り', '▼12時入り', '▼14時入り', '▼17時入り', '△15時あがり', '△18時あがり', '△20時あがり', '△21時あがり'];
+
+    // Speichert manuelle Überschreibungen für die Wochennummern pro Tabellen-Index
+    const manualWeekOverrides = {};
 
     function initName() {
       const savedName = localStorage.getItem('shift_generator_name');
@@ -343,16 +357,7 @@
           cell.classList.add('highlight-yukyu');
         } else if (val.includes('入り')) {
           cell.classList.add('highlight-part');
-        } else if (val === '△15時あがり') {
-          cell.classList.add('highlight-15out');
-        }
-        else if (val === '△20時あがり') {
-          cell.classList.add('highlight-15out');
-        }
-        else if (val === '△18時あがり') {
-          cell.classList.add('highlight-15out');
-        }
-         else if (val === '△21時あがり') {
+        } else if (val === '△15時あがり' || val === '△18時あがり' || val === '△20時あがり' || val === '△21時あがり') {
           cell.classList.add('highlight-15out');
         }
       });
@@ -362,7 +367,6 @@
       let startDateVal = startDateInput.value;
       if (!startDateVal) return;
 
-      // Collect current states before rebuilding the tables (keyed by date string like "2026-10-01")
       const existingStates = {};
       document.querySelectorAll('.week-table').forEach(table => {
         table.querySelectorAll('select.shift-select').forEach(sel => {
@@ -407,6 +411,7 @@
 
           weekDays.push({
             dateStr: dateStr,
+            year: year,
             month: month,
             dayNum: dayNum,
             dowLabel: dayLabels[i]
@@ -418,16 +423,64 @@
 
       let dominantMonthKey = Object.keys(monthCounts).reduce((a, b) => monthCounts[a] > monthCounts[b] ? a : b);
       const [domYear, domMonth] = dominantMonthKey.split('-');
+      const targetMonthNum = parseInt(domMonth);
+      const targetYearNum = parseInt(domYear);
 
       titleText.textContent = `${domYear}年 ${domMonth}月 シフト希望`;
       nameText.textContent = name;
 
+      let firstDayOfTargetMonth = new Date(targetYearNum, targetMonthNum - 1, 1);
+      let scanDate = new Date(targetYearNum, targetMonthNum - 1, 1);
+      let dOfWeek = scanDate.getDay();
+      let dToMon = (dOfWeek === 0 ? -6 : 1 - dOfWeek);
+      scanDate.setDate(scanDate.getDate() + dToMon);
+
+      const monthWeekMap = {};
+      let weekCounter = 1;
+      
+      for (let s = 0; s < 10; s++) {
+        const sY = scanDate.getFullYear();
+        const sM = scanDate.getMonth() + 1;
+        const sD = scanDate.getDate();
+        const sDateStr = `${sY}-${String(sM).padStart(2, '0')}-${String(sD).padStart(2, '0')}`;
+        
+        let containsTargetMonth = false;
+        let tempDate = new Date(scanDate);
+        for (let d = 0; d < 7; d++) {
+          if (tempDate.getFullYear() === targetYearNum && tempDate.getMonth() + 1 === targetMonthNum) {
+            containsTargetMonth = true;
+          }
+          tempDate.setDate(tempDate.getDate() + 1);
+        }
+
+        if (containsTargetMonth) {
+          monthWeekMap[sDateStr] = weekCounter++;
+        }
+        
+        scanDate.setDate(scanDate.getDate() + 7);
+      }
+
       allWeeksData.forEach((weekDays, wIdx) => {
-        const w = wIdx + 1;
+        const weekStartStr = weekDays[0].dateStr;
+        let defaultCalculatedWeek = monthWeekMap[weekStartStr] ? monthWeekMap[weekStartStr] : (wIdx + 1);
+        
+        // Verwende manuellen Override, falls gesetzt, sonst den berechneten Wert
+        let currentWeekNum = manualWeekOverrides[wIdx] !== undefined ? manualWeekOverrides[wIdx] : defaultCalculatedWeek;
+
         const table = document.createElement('table');
         table.className = 'week-table';
 
-        let html = `<thead><tr><th class="col-label">${w}週目</th>`;
+        // Dropdown für die Wochen-Auswahl im Header-Label
+        let weekOptionsHtml = '';
+        for (let num = 1; num <= 6; num++) {
+          weekOptionsHtml += `<option value="${num}" ${num === currentWeekNum ? 'selected' : ''}>${num}週目</option>`;
+        }
+
+        let html = `<thead><tr><th class="col-label week-label-th" data-table-idx="${wIdx}">
+          <select class="week-override-select" data-table-idx="${wIdx}">
+            ${weekOptionsHtml}
+          </select>
+        </th>`;
         weekDays.forEach((d, idx) => {
           html += `<th class="col-day" data-col-index="${idx}">${d.month}月${d.dayNum}日</th>`;
         });
@@ -441,7 +494,6 @@
 
         html += `<tr><td class="col-label">${name}</td>`;
         weekDays.forEach((d, idx) => {
-          // Restore saved state if available, otherwise default to '通し'
           let defaultVal = existingStates[d.dateStr] !== undefined ? existingStates[d.dateStr] : '通し';
 
           html += `
@@ -457,6 +509,12 @@
 
         table.innerHTML = html;
         tablesContainer.appendChild(table);
+
+        // Event-Listener für manuelle Wochen-Änderung
+        const weekSelect = table.querySelector('.week-override-select');
+        weekSelect.addEventListener('change', (e) => {
+          manualWeekOverrides[wIdx] = parseInt(e.target.value);
+        });
 
         table.querySelectorAll('[data-col-index]').forEach(element => {
           element.addEventListener('click', (e) => {
@@ -482,8 +540,16 @@
     }
 
     function downloadImage() {
+      // Vor dem Exportieren das Wochen-Select durch einen reinen Text-Span ersetzen, damit es im Bild sauber aussieht
+      const weekSelects = document.querySelectorAll('.week-override-select');
+      weekSelects.forEach(sel => {
+        const parentTh = sel.closest('th');
+        const valText = sel.value + '週目';
+        parentTh.dataset.originalHtml = parentTh.innerHTML;
+        parentTh.textContent = valText;
+      });
+
       const selects = document.querySelectorAll('.shift-select');
-      
       selects.forEach(select => {
         const span = select.nextElementSibling;
         span.textContent = select.value;
@@ -519,6 +585,21 @@
           link.click();
         }
 
+        // Nach dem Export alles wieder in den interaktiven Zustand versetzen
+        weekSelects.forEach(sel => {
+          const parentTh = sel.closest('th');
+          if (parentTh.dataset.originalHtml) {
+            parentTh.innerHTML = parentTh.dataset.originalHtml;
+            // Event-Listener neu binden
+            const newSel = parentTh.querySelector('.week-override-select');
+            newSel.value = sel.value;
+            const tIdx = parseInt(newSel.dataset.tableIdx);
+            newSel.addEventListener('change', (e) => {
+              manualWeekOverrides[tIdx] = parseInt(e.target.value);
+            });
+          }
+        });
+
         selects.forEach(select => {
           const span = select.nextElementSibling;
           select.style.display = 'block';
@@ -527,7 +608,10 @@
       });
     }
 
-    startDateInput.addEventListener('change', renderRoster);
+    startDateInput.addEventListener('change', () => {
+      Object.keys(manualWeekOverrides).forEach(key => delete manualWeekOverrides[key]); // Reset overrides on date change
+      renderRoster();
+    });
     weeksCountSelect.addEventListener('change', renderRoster);
     nameInput.addEventListener('input', () => {
       saveNameToStorage();
