@@ -35,7 +35,7 @@
       border: 1px solid #CBD5E0;
       padding: 10px 14px;
       border-radius: 6px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       display: flex;
       gap: 8px;
       align-items: center;
@@ -81,6 +81,86 @@
 
     .save-btn:hover {
       background-color: #276749 !important;
+    }
+
+    /* Modern Interactive Instruction Island */
+    .instruction-island {
+      width: 100%;
+      max-width: 780px;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 244, 248, 0.9));
+      border: 1px solid rgba(203, 213, 224, 0.9);
+      border-radius: 8px;
+      padding: 12px 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .instruction-island::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(to bottom, #1A365D, #2B6CB0);
+    }
+
+    .instruction-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .instruction-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+      border-color: #CBD5E0;
+    }
+
+    .instruction-icon {
+      font-size: 18px;
+      background: #EDF2F7;
+      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .instruction-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .instruction-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #1A365D;
+    }
+
+    .instruction-sub {
+      font-size: 10.5px;
+      color: #4A5568;
+      line-height: 1.25;
+    }
+
+    .instruction-sub .en {
+      display: block;
+      color: #718096;
+      font-size: 10px;
     }
 
     /* Mobile Scroll Outer Container */
@@ -243,6 +323,10 @@
       #name-input {
         width: 75px;
       }
+      .instruction-island {
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
     }
   </style>
 </head>
@@ -274,6 +358,30 @@
 
     <button onclick="downloadImage()">画像をダウンロード</button>
   </div>
+
+  <!-- Interactive Instruction Island -->
+  <section class="instruction-island">
+    <div class="instruction-card">
+      <div class="instruction-icon">👆</div>
+      <div class="instruction-content">
+        <span class="instruction-title">シフトの変更 / Adjust Shift</span>
+        <span class="instruction-sub">
+          変更したい部分をクリックして選択<br>
+          <span class="en">Click any cell or column to adjust shift status</span>
+        </span>
+      </div>
+    </div>
+    <div class="instruction-card">
+      <div class="instruction-icon">✏️</div>
+      <div class="instruction-content">
+        <span class="instruction-title">名前の変更 / Edit Name</span>
+        <span class="instruction-sub">
+          上部名前欄をカスタマイズ<br>
+          <span class="en">Type & save your name in the toolbar</span>
+        </span>
+      </div>
+    </div>
+  </section>
 
   <div class="paper-wrapper">
     <div id="shift-paper">
